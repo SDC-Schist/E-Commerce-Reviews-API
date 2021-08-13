@@ -1,8 +1,10 @@
-import { dbConfig } from '../config/config'
+const dbConfig = require('../config/config.js');
+
+console.log(dbConfig)
 
 const Pool = require('pg').Pool
 const pool = new Pool({
-  user: dbConfig.user,
+  user: 'postgres',
   host: 'localhost',
   database: 'sdc',
   password: dbConfig.password,
