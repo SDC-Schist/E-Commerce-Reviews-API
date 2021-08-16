@@ -122,23 +122,3 @@ let repoSchema = mongoose.Schema({
   ownerurl: String
 
 });
-
-
-sudo chown postgres.postgres -R /srv/postgresql/13/main
-sudo find /srv/postgresql/13/main -type d -print0 | xargs -r -0 chmod 700
-sudo find /srv/postgresql/13/main -type f -print0 | xargs -r -0 chmod 600
-sudo chown postgres.postgres -R /var/run/postgresql
-sudo chmod u=rwx,g=rws,o=rx /var/run/postgresql
-sudo find /var/run/postgresql -type f -print0 | xargs -r -0 chmod 600
-sudo chmod u=rwx,g=rs /var/run/postgresql/*.pid
-sudo service postgresql restart
-
-
-sudo cat /etc/postgresql/13/main/postgresql.conf | grep data_directory
-mkdir -p /var/run/postgresql/13-main.pg_stat_tmp
-
-chown postgres /var/run/postgresql/13-main.pg_stat_tmp
-
-chgrp postgres /var/run/postgresql/13-main.pg_stat_tmp
-
-postgres role give role permissions

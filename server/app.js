@@ -9,9 +9,13 @@ const port = 3000
 
 app.use(express.json());
 app.get('/reviews', db.getReviews)
-
 app.get('/characteristics', db.getCharacteristics)
-app.get('/characteristicsReviewsReviews', db.getCharacteristicsReviews)
+
+
+app.get('/characteristicsReviews', db.getCharacteristicsReviews)
+app.get('/reviews_photos', db.getReviewsPhotos)
+
+
 
 
 app.listen(port, ()=>{
