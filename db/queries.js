@@ -1,6 +1,5 @@
 const dbConfig = require('../config/config.js');
 
-console.log(dbConfig)
 
 const Pool = require('pg').Pool
 const pool = new Pool({
@@ -18,7 +17,6 @@ const getReviews = (request, response) => {
   } else {
 
     var params = request.query
-    console.log(params)
 
     var sortObj = {
       "newest":"date DESC ",
@@ -48,7 +46,6 @@ const getReviews = (request, response) => {
       if (error) {
         throw error
       }
-      console.log(results.rows[0])
       var obj = {
           "product": product_id,
           "page": page,
@@ -65,7 +62,6 @@ const getReviews = (request, response) => {
 const getReviewsMeta = (request, response) => {
 
   params = request.query
-  console.log(params)
   product_id = request.query.product_id
 
 var ratingQuery = `SELECT rating, json_build_object (
@@ -123,8 +119,6 @@ var ratingQuery = `SELECT rating, json_build_object (
 
 const postReview = (request, response) => {
   var review = request.body;
-
-  console.log(review.name.length)
 
   if (typeof review.product_id !== 'number' || typeof review.rating !== 'number' || review.name.length === 0 || review.rating > 5 || review.rating <= 0 || review.email.length === 0 || !review.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
     response.status(400).send('Error: Review body contains invalid entries')

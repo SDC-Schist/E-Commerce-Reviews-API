@@ -122,3 +122,21 @@ let repoSchema = mongoose.Schema({
   ownerurl: String
 
 });
+CREATE TABLE testPhotos (
+  id SERIAL PRIMARY KEY,
+  review_id INT NOT NULL,
+  url VARCHAR (1000) NOT NULL,
+  FOREIGN KEY (review_id)
+    REFERENCES reviews (id)
+);
+
+CREATE TABLE testchar (
+  id SERIAL PRIMARY KEY,
+  characteristic_id INT NOT NULL,
+  review_id INT NOT NULL,
+  value INT NOT NULL,
+  FOREIGN KEY (characteristic_id)
+   REFERENCES characteristics (id),
+  FOREIGN KEY (review_id)
+    REFERENCES reviews (id)
+);
