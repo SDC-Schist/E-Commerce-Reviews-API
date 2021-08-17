@@ -9,11 +9,8 @@ const port = 3000
 
 app.use(express.json());
 app.get('/reviews', db.getReviews)
-app.get('/characteristics', db.getCharacteristics)
-
-
-app.get('/characteristicsReviews', db.getCharacteristicsReviews)
-app.get('/reviews_photos', db.getReviewsPhotos)
+app.get('/reviews/meta', db.getReviewsMeta)
+app.post('/reviews', db.postReview)
 
 
 

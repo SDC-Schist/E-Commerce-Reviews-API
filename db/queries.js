@@ -62,7 +62,7 @@ const getReviews = (request, response) => {
 }
 
 
-const getCharacteristics = (request, response) => {
+const getReviewsMeta = (request, response) => {
 
   params = request.query
   console.log(params)
@@ -84,7 +84,7 @@ var ratingQuery = `SELECT rating, json_build_object (
 
  var recommendQuery = `SELECT json_build_object (
   'false', CAST((SELECT COUNT(recommend) FROM reviews WHERE product_id=${product_id} AND recommend=false) AS text),
-  'true', CAST((SELECT COUNT(recommend) FROM reviews WHERE product_id=1${product_id} AND recommend=true) AS text)
+  'true', CAST((SELECT COUNT(recommend) FROM reviews WHERE product_id=${product_id} AND recommend=true) AS text)
   )  AS recommended FROM reviews WHERE product_id=${product_id} LIMIT 1;`
 
 
@@ -121,44 +121,71 @@ var ratingQuery = `SELECT rating, json_build_object (
 
 }
 
-const getCharacteristicsReviews = (request, response) => {
-  var charQuery = `SELECT characteristics.id, characteristics.name, AVG(characteristic_reviews.value) FROM characteristics INNER JOIN characteristic_reviews ON characteristics.id=characteristic_reviews.characteristic_id WHERE characteristics.product_id=15 GROUP BY characteristics.id;`
+const postReview = (request, response) => {
+  var review = request.body;
 
-  var output = {}
-  var convertChar = (results) => {
-    var chars = {}
-
-    for(var obj of results) {
-      chars[obj.name] = {
-      'id': obj.id,
-      'value': obj.avg
-      }
-    }
-
-    return chars
+  if (typeof review.product_id !== 'number' || typeof review.rating !== 'number' || review.rating > 5 || review.rating <= 0 || review.email.length === 0 || !review.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
+    response.status(400).send('Invalid Request')
+    return
   }
 
-  pool.query(query)
-  .then(results => response.status(200).json(convertChar(results.rows)))
-  .catch(error => console.log(error));
-}
+  if (review.photos !== undefined && review.photos.filter( url => url.match(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi)).length !== review.photos.length) {
+    response.status(400).send('Invalid Request')
+    return
+  }
 
-const getReviewsPhotos = (request, response) => {
-  pool.query('SELECT * FROM reviews_photos WHERE review_id=5;', (error, results) => {
-    if (error) {
-      throw error
+
+  var addReview = () => {
+
+    return `INSERT INTO "test" (product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, helpfulness)
+    VALUES (${review.product_id}, ${review.rating}, ${Date.now()}, '${review.summary || ''}', '${review.body || ''}', ${review.recommend} , ${false}, '${review.name || ''}', '${review.email || ''}', 0) RETURNING id;`
+
+  }
+
+  var addPhotos = (reviewID, photos) => {
+    var photoQuery = `INSERT INTO testPhotos (review_id, url) VALUES`
+
+    photos.forEach(photo => photoQuery+=` (${reviewID}, '${photo}'),`)
+    photoQuery= photoQuery.slice(0, photoQuery.length-1)
+    photoQuery+= ' RETURNING review_id;'
+
+    return photoQuery
+  }
+
+  var addCharacteristics = (reviewID, characteristics) => {
+    var charQuery = `INSERT INTO testchar (characteristic_id, review_id, value) VALUES `
+
+    for (var key in characteristics) {
+      charQuery += `(${Number(key)}, ${reviewID}, ${characteristics[key]}),`
     }
-    console.log(request.data)
-    response.status(200).json(results.rows)
+    charQuery = charQuery.slice(0, charQuery.length-1);
+    charQuery += ` RETURNING review_id;`
+
+    return charQuery
+  };
+
+  pool.query(addReview())
+  .then (results => {
+    if (review.photos !== undefined) {
+      pool.query(addPhotos(results.rows[0].id, review.photos))
+    }
+      return results.rows[0].id
   })
-}
+  .then(results => {
+    if (Object.keys(review.characteristics).length !== 0) {
+      pool.query(addCharacteristics(results, review.characteristics))
+    }
+      return results
+  })
+  .then(results => response.sendStatus(201))
+  .catch(()=> response.send('fail'))
+};
 
 
 module.exports = {
   getReviews,
-  getCharacteristics,
-  getCharacteristicsReviews,
-  getReviewsPhotos
+  getReviewsMeta,
+  postReview
 }
 
 /*
@@ -168,7 +195,7 @@ ALTER
 
 
 
-
+INSERT INTO testchar (characteristic_id, review_id, value) VALUES (14, 1, 5),(15, 1, 5) RETURNING review_id;
 
 
 
