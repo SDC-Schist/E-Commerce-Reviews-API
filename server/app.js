@@ -11,6 +11,8 @@ app.use(express.json());
 app.get('/reviews', db.getReviews)
 app.get('/reviews/meta', db.getReviewsMeta)
 app.post('/reviews', db.postReview)
+app.put('/reviews/:review_id/helpful', db.putHelpful)
+app.put('/reviews/:review_id/report', db.putReport)
 
 
 

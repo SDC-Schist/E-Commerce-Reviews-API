@@ -43,7 +43,7 @@ const getReviews = (request, response) => {
       'photos', ARRAY ( SELECT json_build_object (
         'url', reviews_photos.url
       ) FROM reviews_photos WHERE reviews_photos.review_id = reviews.id
-    )) FROM reviews Where reviews.product_id=${product_id}  ORDER BY reviews.${sort} Limit ${count}) AS results ;`
+    )) FROM reviews Where reviews.product_id=${product_id} AND reviews.reported=false ORDER BY reviews.${sort} Limit ${count}) AS results ;`
     pool.query(query, (error, results) => {
       if (error) {
         throw error
@@ -124,26 +124,28 @@ var ratingQuery = `SELECT rating, json_build_object (
 const postReview = (request, response) => {
   var review = request.body;
 
-  if (typeof review.product_id !== 'number' || typeof review.rating !== 'number' || review.rating > 5 || review.rating <= 0 || review.email.length === 0 || !review.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
-    response.status(400).send('Invalid Request')
+  console.log(review.name.length)
+
+  if (typeof review.product_id !== 'number' || typeof review.rating !== 'number' || review.name.length === 0 || review.rating > 5 || review.rating <= 0 || review.email.length === 0 || !review.email.match(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)) {
+    response.status(400).send('Error: Review body contains invalid entries')
     return
   }
 
   if (review.photos !== undefined && review.photos.filter( url => url.match(/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi)).length !== review.photos.length) {
-    response.status(400).send('Invalid Request')
+    response.status(400).send('Error: Review body contains invalid entries')
     return
   }
 
 
   var addReview = () => {
 
-    return `INSERT INTO "test" (product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, helpfulness)
+    return `INSERT INTO reviews (product_id, rating, date, summary, body, recommend, reported, reviewer_name, reviewer_email, helpfulness)
     VALUES (${review.product_id}, ${review.rating}, ${Date.now()}, '${review.summary || ''}', '${review.body || ''}', ${review.recommend} , ${false}, '${review.name || ''}', '${review.email || ''}', 0) RETURNING id;`
 
   }
 
   var addPhotos = (reviewID, photos) => {
-    var photoQuery = `INSERT INTO testPhotos (review_id, url) VALUES`
+    var photoQuery = `INSERT INTO reviews_photos (review_id, url) VALUES`
 
     photos.forEach(photo => photoQuery+=` (${reviewID}, '${photo}'),`)
     photoQuery= photoQuery.slice(0, photoQuery.length-1)
@@ -153,7 +155,7 @@ const postReview = (request, response) => {
   }
 
   var addCharacteristics = (reviewID, characteristics) => {
-    var charQuery = `INSERT INTO testchar (characteristic_id, review_id, value) VALUES `
+    var charQuery = `INSERT INTO characteristic_reviews (characteristic_id, review_id, value) VALUES `
 
     for (var key in characteristics) {
       charQuery += `(${Number(key)}, ${reviewID}, ${characteristics[key]}),`
@@ -181,11 +183,37 @@ const postReview = (request, response) => {
   .catch(()=> response.send('fail'))
 };
 
+const putHelpful = (request, response) => {
+
+  var incrementHelpful = () => {
+    return `UPDATE reviews set helpfulness = helpfulness + 1 WHERE id = ${request.params.review_id} RETURNING helpfulness;`
+  }
+
+  pool.query(incrementHelpful())
+  .then(results => response.sendStatus(204))
+  .catch(()=> response.sendStatus(400))
+
+}
+
+const putReport = (request, response) => {
+
+  var report = () => {
+    return `UPDATE reviews set reported = true WHERE id = ${request.params.review_id};`
+  }
+
+  pool.query(report())
+  .then(results => response.sendStatus(204))
+  .catch(()=> response.sendStatus(400))
+
+}
+
 
 module.exports = {
   getReviews,
   getReviewsMeta,
-  postReview
+  postReview,
+  putHelpful,
+  putReport
 }
 
 /*
